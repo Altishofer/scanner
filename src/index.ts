@@ -578,8 +578,30 @@ const onLoad = async () => {
       while (pastWrapper.lastChild != past) {
         pastWrapper.removeChild(pastWrapper.lastChild!);
       }
-      download(new Blob([await toPDF(await Promise.all(pages.map(({ data, quad }) => extractDocument(data, quad, 1224, true))))]), 'out.pdf')
+      
+      // Download each page as a separate JPG
+      for (let i = 0; i < pages.length; i++) {
+        const { data, quad } = pages[i];
+        const extractedImage = await extractDocument(data, quad, 1224, true);
+        
+        // Convert ImageData to canvas and then to blob
+        const canvas = document.createElement('canvas');
+        canvas.width = extractedImage.width;
+        canvas.height = extractedImage.height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.putImageData(extractedImage, 0, 0);
+        
+        // Convert to JPG blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const filename = pages.length === 1 ? 'scan.jpg' : `scan_${i + 1}.jpg`;
+            download(blob, filename);
+          }
+        }, 'image/jpeg', 0.9);
+      }
+      
       pages.length = 0;
+      doneWrapper.style.opacity = '';
     }
   }
   past.onclick = async () => {

@@ -4,8 +4,9 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "node",
-    "noEmit": true
+    "noEmit": true,
+    "skipLibCheck": true
   },
   "include": ["src"],
-  "exclude": ["src/workers/**/*"]
+  "exclude": ["src/workers/**/*", "node_modules/@types/webrtc/**/*"]
 }

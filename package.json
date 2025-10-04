@@ -7,17 +7,18 @@
   "license": "MIT",
   "scripts": {
     "start": "parcel src/index.html",
+    "dev": "parcel src/index.html",
     "build-wasm": "wasm-pack build --target web",
-    "build": "tsc && tsc -p src/workers/tsconfig.json && parcel build src/index.html --public-url ."
+    "build": "npm run build-wasm && tsc && tsc -p src/workers/tsconfig.json && parcel build src/index.html --public-url .",
+    "vercel-build": "npm run build"
   },
   "devDependencies": {
     "@parcel/compressor-brotli": "^2.9.3",
     "@parcel/compressor-gzip": "^2.9.3",
     "@parcel/packager-raw-url": "^2.9.3",
-    "@types/w3c-image-capture": "^1.0.7",
     "parcel": "^2.9.3",
     "parcel-config-pwa-manifest": "^0.1.5",
-    "typescript": "^5.2.2"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@parcel/service-worker": "^2.9.3",
