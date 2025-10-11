@@ -594,7 +594,8 @@ const onLoad = async () => {
         // Convert to JPG blob
         canvas.toBlob((blob) => {
           if (blob) {
-            const filename = pages.length === 1 ? 'scan.jpg' : `scan_${i + 1}.jpg`;
+            const currentTime = new Date().toISOString().split('.')[0].replace(/[:.]/g, '-');
+            const filename = pages.length === 1 ? `${currentTime}_scan.jpg` : `${currentTime}_scan_${i + 1}.jpg`;
             download(blob, filename);
           }
         }, 'image/jpeg', 0.9);
