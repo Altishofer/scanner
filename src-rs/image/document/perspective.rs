@@ -1,8 +1,46 @@
 use super::{super::RGBAImage, Point, Quad};
-use alloc::vec::Vec;
 
 type Vec3 = [f32; 3];
 type Mat3 = [f32; 9];
+
+// Normalize quad points to ensure consistent ordering
+// This prevents unwanted flipping/rotation during perspective correction
+fn normalize_quad_ordering(quad: Quad) -> Quad {
+    let mut points = [quad.a, quad.b, quad.c, quad.d];
+    
+    // Find the top-left point (smallest x + y)
+    let mut top_left_idx = 0;
+    let mut min_sum = points[0].x + points[0].y;
+    for (i, point) in points.iter().enumerate().skip(1) {
+        let sum = point.x + point.y;
+        if sum < min_sum {
+            min_sum = sum;
+            top_left_idx = i;
+        }
+    }
+    
+    // Rotate the array so top-left is first
+    points.rotate_left(top_left_idx);
+    
+    // Check if we need to reverse the order (if points are in clockwise order)
+    // We want counter-clockwise order: top-left, top-right, bottom-right, bottom-left
+    let cross_product = (points[1].x - points[0].x) * (points[3].y - points[0].y) 
+                      - (points[3].x - points[0].x) * (points[1].y - points[0].y);
+    
+    if cross_product < 0.0 {
+        // Points are in clockwise order, reverse to get counter-clockwise
+        points.swap(1, 3);
+    }
+    
+    // Now we have: [top-left, top-right, bottom-right, bottom-left]
+    // But we need: [bottom-left, top-left, top-right, bottom-right] for the perspective function
+    Quad {
+        a: points[3], // bottom-left
+        b: points[0], // top-left
+        c: points[1], // top-right
+        d: points[2], // bottom-right
+    }
+}
 
 fn adj(src: Mat3) -> Mat3 {
     [
@@ -66,10 +104,10 @@ fn create_projector(from: Quad, to: Quad) -> impl Fn(Point) -> Point {
 }
 
 pub fn perspective(source: &RGBAImage, quad: Quad, width: usize, height: usize) -> RGBAImage {
-    let mut data = Vec::with_capacity((width * height) << 2);
-    unsafe {
-        data.set_len(data.capacity());
-    }
+    // Normalize the quad ordering to prevent unwanted flipping/rotation
+    let normalized_quad = normalize_quad_ordering(quad);
+    
+    let mut data = vec![0u8; (width * height) << 2];
     let wf = width as f32;
     let hf = height as f32;
     let projector = create_projector(
@@ -79,7 +117,7 @@ pub fn perspective(source: &RGBAImage, quad: Quad, width: usize, height: usize) 
             c: Point { x: wf, y: 0.0 },
             d: Point { x: wf, y: hf },
         },
-        quad,
+        normalized_quad,
     );
     let off_sw = source.width << 2;
     let off_se = off_sw + 4;
