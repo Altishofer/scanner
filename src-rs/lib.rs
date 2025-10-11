@@ -13,15 +13,24 @@ compile_error!("Only compilable to WASM");
 
 fn sum_sides(quad: Quad) -> (f32, f32) {
     let Quad { a, b, c, d } = quad;
-    let side = (a.x - b.x).hypot(a.y - b.y) + (c.x - d.x).hypot(c.y - d.y);
-    let top = (b.x - c.x).hypot(b.y - c.y) + (d.x - a.x).hypot(d.y - a.y);
-    (side, top)
+    // With normalized ordering: a=bottom-left, b=top-left, c=top-right, d=bottom-right
+    // Calculate width (top and bottom sides) and height (left and right sides)
+    let top_width = (b.x - c.x).hypot(b.y - c.y);    // top-left to top-right
+    let bottom_width = (a.x - d.x).hypot(a.y - d.y); // bottom-left to bottom-right
+    let left_height = (a.x - b.x).hypot(a.y - b.y);  // bottom-left to top-left
+    let right_height = (d.x - c.x).hypot(d.y - c.y); // bottom-right to top-right
+    
+    let avg_width = (top_width + bottom_width) / 2.0;
+    let avg_height = (left_height + right_height) / 2.0;
+    
+    // Return (width, height) instead of (side, top) for clarity
+    (avg_width, avg_height)
 }
 
 fn sort_quad(quad: Quad) -> Quad {
     let Quad { a, b, c, d } = quad;
-    let (side, top) = sum_sides(quad);
-    if side > top {
+    let (width, height) = sum_sides(quad);
+    if width > height {
         if a.x + b.x < c.x + d.x {
             if a.y > b.y {
                 Quad { a, b, c, d }
@@ -162,8 +171,8 @@ pub fn extract_document(
     let target_height = if let Some(height) = target_height {
         height
     } else {
-        let (side, top) = sum_sides(region);
-        (side / top * (target_width as f32)) as usize
+        let (width, height) = sum_sides(region);
+        (height / width * (target_width as f32)) as usize
     };
     ImageData::new_with_u8_clamped_array_and_sh(
         Clamped(&rgba.perspective(region, target_width, target_height).data),

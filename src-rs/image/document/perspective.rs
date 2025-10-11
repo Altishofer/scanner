@@ -3,42 +3,44 @@ use super::{super::RGBAImage, Point, Quad};
 type Vec3 = [f32; 3];
 type Mat3 = [f32; 9];
 
-// Normalize quad points to ensure consistent ordering
-// This prevents unwanted flipping/rotation during perspective correction
+// Simple quad normalization that preserves aspect ratio
+// This ensures consistent point ordering without changing the document's natural dimensions
 fn normalize_quad_ordering(quad: Quad) -> Quad {
-    let mut points = [quad.a, quad.b, quad.c, quad.d];
+    let points = [quad.a, quad.b, quad.c, quad.d];
     
-    // Find the top-left point (smallest x + y)
-    let mut top_left_idx = 0;
-    let mut min_sum = points[0].x + points[0].y;
-    for (i, point) in points.iter().enumerate().skip(1) {
-        let sum = point.x + point.y;
-        if sum < min_sum {
-            min_sum = sum;
-            top_left_idx = i;
+    // Find corners based on their actual position in the bounding box
+    let mut corners = [(Point { x: 0.0, y: 0.0 }, 0); 4]; // (point, original_index)
+    
+    for (i, &point) in points.iter().enumerate() {
+        corners[i] = (point, i);
+    }
+    
+    // Sort by y-coordinate first, then by x-coordinate to identify corners consistently
+    corners.sort_by(|a, b| {
+        let y_cmp = a.0.y.partial_cmp(&b.0.y).unwrap();
+        if y_cmp == core::cmp::Ordering::Equal {
+            a.0.x.partial_cmp(&b.0.x).unwrap()
+        } else {
+            y_cmp
         }
-    }
+    });
     
-    // Rotate the array so top-left is first
-    points.rotate_left(top_left_idx);
+    // Now we have points sorted by position:
+    // corners[0] and corners[1] are the top two points
+    // corners[2] and corners[3] are the bottom two points
     
-    // Check if we need to reverse the order (if points are in clockwise order)
-    // We want counter-clockwise order: top-left, top-right, bottom-right, bottom-left
-    let cross_product = (points[1].x - points[0].x) * (points[3].y - points[0].y) 
-                      - (points[3].x - points[0].x) * (points[1].y - points[0].y);
+    let top_left = if corners[0].0.x < corners[1].0.x { corners[0].0 } else { corners[1].0 };
+    let top_right = if corners[0].0.x > corners[1].0.x { corners[0].0 } else { corners[1].0 };
+    let bottom_left = if corners[2].0.x < corners[3].0.x { corners[2].0 } else { corners[3].0 };
+    let bottom_right = if corners[2].0.x > corners[3].0.x { corners[2].0 } else { corners[3].0 };
     
-    if cross_product < 0.0 {
-        // Points are in clockwise order, reverse to get counter-clockwise
-        points.swap(1, 3);
-    }
-    
-    // Now we have: [top-left, top-right, bottom-right, bottom-left]
-    // But we need: [bottom-left, top-left, top-right, bottom-right] for the perspective function
+    // Return in the order expected by the perspective function:
+    // a: bottom-left, b: top-left, c: top-right, d: bottom-right
     Quad {
-        a: points[3], // bottom-left
-        b: points[0], // top-left
-        c: points[1], // top-right
-        d: points[2], // bottom-right
+        a: bottom_left,
+        b: top_left,
+        c: top_right,
+        d: bottom_right,
     }
 }
 
