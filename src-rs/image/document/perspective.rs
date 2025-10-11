@@ -3,10 +3,9 @@ use super::{super::RGBAImage, Point, Quad};
 type Vec3 = [f32; 3];
 type Mat3 = [f32; 9];
 
-// Simple quad normalization that preserves aspect ratio
-// This ensures consistent point ordering without changing the document's natural dimensions
 fn normalize_quad_ordering(quad: Quad) -> Quad {
-    let points = [quad.a, quad.b, quad.c, quad.d];
+    let Quad { a, b, c, d } = quad;
+    let points = [a, b, c, d];
     
     // Find corners based on their actual position in the bounding box
     let mut corners = [(Point { x: 0.0, y: 0.0 }, 0); 4]; // (point, original_index)

@@ -15,10 +15,10 @@ fn sum_sides(quad: Quad) -> (f32, f32) {
     let Quad { a, b, c, d } = quad;
     // With normalized ordering: a=bottom-left, b=top-left, c=top-right, d=bottom-right
     // Calculate width (top and bottom sides) and height (left and right sides)
-    let top_width = (b.x - c.x).hypot(b.y - c.y);    // top-left to top-right
-    let bottom_width = (a.x - d.x).hypot(a.y - d.y); // bottom-left to bottom-right
-    let left_height = (a.x - b.x).hypot(a.y - b.y);  // bottom-left to top-left
-    let right_height = (d.x - c.x).hypot(d.y - c.y); // bottom-right to top-right
+    let top_width = (c.x - b.x).hypot(c.y - b.y);    // top-left to top-right
+    let bottom_width = (d.x - a.x).hypot(d.y - a.y); // bottom-left to bottom-right
+    let left_height = (b.x - a.x).hypot(b.y - a.y);  // bottom-left to top-left
+    let right_height = (c.x - d.x).hypot(c.y - d.y); // bottom-right to top-right
     
     let avg_width = (top_width + bottom_width) / 2.0;
     let avg_height = (left_height + right_height) / 2.0;
@@ -27,58 +27,7 @@ fn sum_sides(quad: Quad) -> (f32, f32) {
     (avg_width, avg_height)
 }
 
-fn sort_quad(quad: Quad) -> Quad {
-    let Quad { a, b, c, d } = quad;
-    let (width, height) = sum_sides(quad);
-    if width > height {
-        if a.x + b.x < c.x + d.x {
-            if a.y > b.y {
-                Quad { a, b, c, d }
-            } else {
-                Quad {
-                    a: b,
-                    b: a,
-                    c: d,
-                    d: c,
-                }
-            }
-        } else if c.y > d.y {
-            Quad {
-                a: c,
-                b: d,
-                c: a,
-                d: b,
-            }
-        } else {
-            Quad {
-                a: d,
-                b: c,
-                c: b,
-                d: a,
-            }
-        }
-    } else if b.x + c.x < d.x + a.x {
-        if b.y > c.y {
-            Quad {
-                a: b,
-                b: c,
-                c: d,
-                d: a,
-            }
-        } else {
-            Quad { a: c, b, c: a, d }
-        }
-    } else if d.y > a.y {
-        Quad {
-            a: d,
-            b: a,
-            c: b,
-            d: c,
-        }
-    } else {
-        Quad { a, b: d, c, d: b }
-    }
-}
+// Removed sort_quad function - using normalize_quad_ordering in perspective.rs instead
 
 impl From<ImageData> for RGBAImage {
     fn from(data: ImageData) -> Self {
@@ -145,7 +94,7 @@ pub fn find_document(data: ImageData) -> Option<Quad> {
         src = src.downscale(by);
     }
     src.gaussian().document().map(|doc| {
-        let mut doc = sort_quad(doc.quad);
+        let mut doc = doc.quad; // Remove sort_quad call - normalization handled in perspective function
         doc.a.x *= by;
         doc.a.y *= by;
         doc.b.x *= by;
