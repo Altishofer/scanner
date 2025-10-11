@@ -582,7 +582,40 @@ const onLoad = async () => {
       // Download each page as a separate JPG
       for (let i = 0; i < pages.length; i++) {
         const { data, quad } = pages[i];
-        const extractedImage = await extractDocument(data, quad, 1224, true);
+        
+        // Calculate the correct aspect ratio from the quad
+        // Use the same calculation as the Rust sum_sides function
+        const topWidth = Math.hypot(quad.c.x - quad.b.x, quad.c.y - quad.b.y);    // top-left to top-right
+        const bottomWidth = Math.hypot(quad.d.x - quad.a.x, quad.d.y - quad.a.y); // bottom-left to bottom-right
+        const leftHeight = Math.hypot(quad.b.x - quad.a.x, quad.b.y - quad.a.y);  // bottom-left to top-left
+        const rightHeight = Math.hypot(quad.c.x - quad.d.x, quad.c.y - quad.d.y); // bottom-right to top-right
+        
+        const avgWidth = (topWidth + bottomWidth) / 2;
+        const avgHeight = (leftHeight + rightHeight) / 2;
+        
+        // Calculate target dimensions while preserving aspect ratio
+        const targetSize = 1224;
+        let targetWidth: number;
+        let targetHeight: number;
+        
+        if (avgHeight > avgWidth) {
+          // Portrait document: height is longer
+          targetHeight = targetSize;
+          targetWidth = Math.round(targetSize * (avgWidth / avgHeight));
+        } else {
+          // Landscape document: width is longer
+          targetWidth = targetSize;
+          targetHeight = Math.round(targetSize * (avgHeight / avgWidth));
+        }
+        
+        console.log('Document dimensions:', {
+          avgWidth, avgHeight, 
+          aspectRatio: avgWidth / avgHeight,
+          isPortrait: avgHeight > avgWidth,
+          targetWidth, targetHeight
+        });
+        
+        const extractedImage = await extractDocument(data, quad, targetWidth, targetHeight, true);
         
         // Convert ImageData to canvas and then to blob
         const canvas = document.createElement('canvas');

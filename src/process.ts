@@ -48,12 +48,13 @@ export function findDocument(data: ImageData, transfer?: boolean) {
   }, transfer ? [data.data.buffer] : []);
 }
 
-export function extractDocument(data: ImageData, region: Quad, targetWidth: number, transfer?: boolean) {
+export function extractDocument(data: ImageData, region: Quad, targetWidth: number, targetHeight?: number, transfer?: boolean) {
   return message({
     type: 'extract-document',
     data,
     region,
-    targetWidth
+    targetWidth,
+    targetHeight
   }, transfer ? [data.data.buffer] : []);
 }
 
