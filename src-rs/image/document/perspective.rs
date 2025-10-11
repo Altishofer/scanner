@@ -1,4 +1,5 @@
 use super::{super::RGBAImage, Point, Quad};
+use alloc::vec::Vec;
 
 type Vec3 = [f32; 3];
 type Mat3 = [f32; 9];
@@ -7,39 +8,79 @@ fn normalize_quad_ordering(quad: Quad) -> Quad {
     let Quad { a, b, c, d } = quad;
     let points = [a, b, c, d];
     
-    // Find corners based on their actual position in the bounding box
-    let mut corners = [(Point { x: 0.0, y: 0.0 }, 0); 4]; // (point, original_index)
+    // Calculate the center of the quad
+    let center_x = (a.x + b.x + c.x + d.x) / 4.0;
+    let center_y = (a.y + b.y + c.y + d.y) / 4.0;
     
-    for (i, &point) in points.iter().enumerate() {
-        corners[i] = (point, i);
-    }
+    // Sort points by angle from center to ensure consistent ordering
+    let mut indexed_points: Vec<(Point, usize)> = points.iter().enumerate()
+        .map(|(i, &p)| (p, i))
+        .collect();
     
-    // Sort by y-coordinate first, then by x-coordinate to identify corners consistently
-    corners.sort_by(|a, b| {
-        let y_cmp = a.0.y.partial_cmp(&b.0.y).unwrap();
-        if y_cmp == core::cmp::Ordering::Equal {
-            a.0.x.partial_cmp(&b.0.x).unwrap()
-        } else {
-            y_cmp
-        }
+    indexed_points.sort_by(|a, b| {
+        let angle_a = (a.0.y - center_y).atan2(a.0.x - center_x);
+        let angle_b = (b.0.y - center_y).atan2(b.0.x - center_x);
+        angle_a.partial_cmp(&angle_b).unwrap()
     });
     
-    // Now we have points sorted by position:
-    // corners[0] and corners[1] are the top two points
-    // corners[2] and corners[3] are the bottom two points
+    // Now we have points in clockwise order starting from the rightmost point
+    // We need to identify which point should be which corner
+    // Calculate the bounding box
+    let min_x = points.iter().map(|p| p.x).fold(f32::INFINITY, f32::min);
+    let max_x = points.iter().map(|p| p.x).fold(f32::NEG_INFINITY, f32::max);
+    let min_y = points.iter().map(|p| p.y).fold(f32::INFINITY, f32::min);
+    let max_y = points.iter().map(|p| p.y).fold(f32::NEG_INFINITY, f32::max);
     
-    let top_left = if corners[0].0.x < corners[1].0.x { corners[0].0 } else { corners[1].0 };
-    let top_right = if corners[0].0.x > corners[1].0.x { corners[0].0 } else { corners[1].0 };
-    let bottom_left = if corners[2].0.x < corners[3].0.x { corners[2].0 } else { corners[3].0 };
-    let bottom_right = if corners[2].0.x > corners[3].0.x { corners[2].0 } else { corners[3].0 };
+    // Find the closest point to each corner of the bounding rectangle
+    let mut corners = [Point { x: 0.0, y: 0.0 }; 4];
+    
+    // Find top-left (min_x, min_y)
+    let mut min_dist = f32::INFINITY;
+    for &point in &points {
+        let dist = (point.x - min_x).hypot(point.y - min_y);
+        if dist < min_dist {
+            min_dist = dist;
+            corners[1] = point; // b: top-left
+        }
+    }
+    
+    // Find top-right (max_x, min_y)
+    min_dist = f32::INFINITY;
+    for &point in &points {
+        let dist = (point.x - max_x).hypot(point.y - min_y);
+        if dist < min_dist {
+            min_dist = dist;
+            corners[2] = point; // c: top-right
+        }
+    }
+    
+    // Find bottom-left (min_x, max_y)
+    min_dist = f32::INFINITY;
+    for &point in &points {
+        let dist = (point.x - min_x).hypot(point.y - max_y);
+        if dist < min_dist {
+            min_dist = dist;
+            corners[0] = point; // a: bottom-left
+        }
+    }
+    
+    // Find bottom-right (max_x, max_y)
+    min_dist = f32::INFINITY;
+    for &point in &points {
+        let dist = (point.x - max_x).hypot(point.y - max_y);
+        if dist < min_dist {
+            min_dist = dist;
+            corners[3] = point; // d: bottom-right
+        }
+    }
     
     // Return in the order expected by the perspective function:
     // a: bottom-left, b: top-left, c: top-right, d: bottom-right
     Quad {
-        a: bottom_left,
-        b: top_left,
-        c: top_right,
-        d: bottom_right,
+        a: corners[0], // bottom-left
+        b: corners[1], // top-left
+        c: corners[2], // top-right
+        d: corners[3], // bottom-right
     }
 }
 
@@ -108,18 +149,43 @@ pub fn perspective(source: &RGBAImage, quad: Quad, width: usize, height: usize) 
     // Normalize the quad ordering to prevent unwanted flipping/rotation
     let normalized_quad = normalize_quad_ordering(quad);
     
+    // Calculate the dimensions of the normalized quad to understand its orientation
+    let top_width = (normalized_quad.c.x - normalized_quad.b.x).hypot(normalized_quad.c.y - normalized_quad.b.y);
+    let bottom_width = (normalized_quad.d.x - normalized_quad.a.x).hypot(normalized_quad.d.y - normalized_quad.a.y);
+    let left_height = (normalized_quad.b.x - normalized_quad.a.x).hypot(normalized_quad.b.y - normalized_quad.a.y);
+    let right_height = (normalized_quad.c.x - normalized_quad.d.x).hypot(normalized_quad.c.y - normalized_quad.d.y);
+    
+    let avg_quad_width = (top_width + bottom_width) / 2.0;
+    let avg_quad_height = (left_height + right_height) / 2.0;
+    
+    // Check if the quad orientation matches the target dimensions
+    let quad_is_portrait = avg_quad_height > avg_quad_width;
+    let target_is_portrait = height > width;
+    
     let mut data = vec![0u8; (width * height) << 2];
     let wf = width as f32;
     let hf = height as f32;
-    let projector = create_projector(
+    
+    // Create target rectangle - adjust if orientations don't match
+    let target_quad = if quad_is_portrait == target_is_portrait {
+        // Orientations match - use standard mapping
         Quad {
             a: Point { x: 0.0, y: hf },
             b: Point { x: 0.0, y: 0.0 },
             c: Point { x: wf, y: 0.0 },
             d: Point { x: wf, y: hf },
-        },
-        normalized_quad,
-    );
+        }
+    } else {
+        // Orientations don't match - need to rotate the target rectangle 90 degrees
+        Quad {
+            a: Point { x: 0.0, y: 0.0 },     // bottom-left -> top-left
+            b: Point { x: wf, y: 0.0 },      // top-left -> top-right  
+            c: Point { x: wf, y: hf },       // top-right -> bottom-right
+            d: Point { x: 0.0, y: hf },      // bottom-right -> bottom-left
+        }
+    };
+    
+    let projector = create_projector(target_quad, normalized_quad);
     let off_sw = source.width << 2;
     let off_se = off_sw + 4;
     for y in 0..height {
