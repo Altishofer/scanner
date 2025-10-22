@@ -2,3 +2,10 @@ node_modules/
 dist/
 .parcel-cache/
 target/
+.env
+.idea
+.vscode/
+.DS_Store
+*.log
+package-lock.json
+.cargo
