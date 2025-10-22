@@ -7,75 +7,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Scanner</title>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: black;
-            color: white;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-        }
-        #captures::-webkit-scrollbar {
-            width: 0;
-            height: 0;
-        }
+        html, body { margin: 0; padding: 0; background: black; color: white; overflow: hidden; width: 100vw; height: 100vh; }
+        #captures::-webkit-scrollbar { width: 0; height: 0; }
     </style>
 </head>
 <body>
-    <div id="root" style="display: flex; flex-direction: column; justify-content: space-between; align-items: center;">
-        <div id="top-wrapper" style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start; width: 100vw;">
-            <div id="camera-select-wrapper" style="position: relative; height: 3vh; width: 3vh;">
-                <select id="camera-select" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></select>
-                <img style="position: absolute; top: 0; left: 0; cursor: pointer; height: 100%; z-index: 1" src="camera-switch.svg"></img>
-            </div>
-            <div id="quality-wrapper" style="position: relative; height: 3vh; width: 3vh; display: none;">
-                <button id="quality" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></button>
-                <img id="quality-img" style="position: absolute; top: 0; left: 0; cursor: pointer; height: 100%; z-index: 1" src="hd.svg"></img>
-            </div>
-            <div id="github-wrapper" style="position: relative; height: 3vh; width: 3vh;">
-                <a href="https://github.com/101arrowz/scanner" target="_blank" rel="noopener noreferrer" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></a>
-                <img style="position: absolute; top: 0; left: 0; cursor: pointer; height: 100%; z-index: 1" src="github.svg"></img>
-            </div>
-            <div id="flash-wrapper" style="position: relative; height: 3vh; width: 3vh; display: none;">
-                <button id="flash" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></button>
-                <img id="flash-img" style="position: absolute; top: 0; left: 0; cursor: pointer; height: 100%; z-index: 1" src="flash-off.svg"></img>
-            </div>
-            <div id="past-wrapper" style="position: relative; height: 3vh; width: 3vh; overflow: hidden; box-sizing: border-box; border: 0.2vh solid white; border-radius: 0.2vh; display: flex; justify-content: center; align-items: center;">
-                <button id="past" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></button>
-            </div>
-        </div>
-        <div id="preview-crop" style="display: flex; justify-content: center; align-items: center; overflow: hidden;">
-            <div id="preview-doc" style="position: relative">
-                <video id="preview" autoplay playsinline></video>
-            </div>
-        </div>
-        <div id="bottom-wrapper" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100vw;">
-            <div id="upload-wrapper" style="position: relative; height: 3.5vh; width: 3.5vh;">
-                <input id="upload" type="file" accept="image/*" multiple style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></input>
-                <img style="position: absolute; top: 0; left: 0; cursor: pointer; height: 100%; z-index: 1" src="upload.svg"></img>
-            </div>
-            <img id="shutter" style="cursor: pointer; height: 5vh;" src="camera.svg"></img>
-            <div id="done-wrapper" style="position: relative; height: 3.5vh; width: 3.5vh; opacity: 0.5;">
-                <button id="done" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></button>
-                <img style="position: absolute; top: 0; left: 0; cursor: pointer; height: 100%; z-index: 1" src="done.svg"></img>
-            </div>
-        </div>
-    </div>
-    <div id="modal" style="display: none; flex-direction: column; justify-content: space-between; align-items: center; position: absolute; top: 0; left: 0; z-index: 3; background: black;">
-        <div></div>
-        <div id="captures" style="display: flex; flex-direction: row; align-items: center; overflow: scroll; scrollbar-width: none; scroll-snap-type: both mandatory;"></div>
-        <div id="modal-bottom-wrapper" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100vw;">
-            <div id="modal-cancel-wrapper" style="position: relative; height: 3.5vh; width: 3.5vh;">
-                <button id="modal-cancel" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></button>
-                <img style="position: absolute; top: 0; left: 0; cursor: pointer; height: 100%; z-index: 1" src="close.svg"></img>
-            </div>
-            <div id="modal-done-wrapper" style="position: relative; height: 3.5vh; width: 3.5vh;">
-                <button id="modal-done" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; opacity: 0; z-index: 2; cursor: pointer;"></button>
-                <img style="position: absolute; top: 0; left: 0; cursor: pointer; height: 100%; z-index: 1" src="done.svg"></img>
-            </div>
-        </div>
-    </div>
-    <script type="module" src="index.ts"></script>
+<div id="root"></div>
+<script type="module" src="main.tsx"></script>
+<script type="module" src="index.ts"></script>
+
 </body>
 </html>
